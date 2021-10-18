@@ -28,7 +28,7 @@
 |활용데이터|제공기관|
 |:--:|:--|
 |인구비율정보|통계청 국가통계포털
-|부산광역시 정체 세대 및 인구 개황|통계청 국가통계포털|
+|부산광역시 전체 세대 및 인구 개황|통계청 국가통계포털|
 |토지특성정보|국가교통부 국가공간정보포털|
 |용도별 건물정보|국토교통부 국가공간정보포털|
 |공영 주차장 현황|부산 부비카정보시스템|
@@ -238,6 +238,69 @@ final.reset_index(drop=True, inplace=True)
 - 결과 Sample
 
 ![결과 sample](./img/결과sample.png)
+
+
+#### 머신러닝 방법인 랜덤포레스트 활용한 불연성쓰레기양 예측모델 구현
+- 변수 선언
+``` python
+#독립변수
+x = df[['세대수', '주택수', '인구', '구역_강서구', '구역_금정구', '구역_기장군', '구역_남구',
+       '구역_동구', '구역_동래구', '구역_부산진구', '구역_북구', '구역_사상구', '구역_사하구', '구역_서구',
+       '구역_수영구', '구역_연제구', '구역_영도구', '구역_중구', '구역_해운대구', '년도_2015', '년도_2016',
+       '년도_2017', '년도_2018', '년도_2019']]
+
+#종속변수
+y = df['불쓰양']
+```
+
+- 모델링 구현
+``` python
+from sklearn.preprocessing import MinMaxScaler
+sc = MinMaxScaler()
+
+X = sc.fit_transform(x)
+X = pd.DataFrame(X, columns=[X.columns], index=X.index)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=123)
+```
+
+``` python
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+
+model = RandomForestRegressor()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+R2 = r2_score(y_test, y_pred)
+MAE = mean_absolute_error(y_test, y_pred)
+
+def smape(true, pred):
+      v = 2 * abs(pred - true) / (abs(pred) + abs(true))
+      output = np.mean(v) * 100
+      return output
+SMAPE = smape(y_test, y_pred)
+
+print('R2 :', R2)
+print('MAE :', MAE)
+print('평균불쓰양 :', df['불쓰양'].mean())
+print('SMAPE : ', SMAPE)
+```
+
+``` python
+plt.figure(dpi=200)
+plt.title('불쓰양 예측결과    R2 : ' + str(R2)[:5] + '    MAE : ' + str(MAE)[:7])
+plt.ylabel('불쓰양')
+plt.plot(np.array(y), alpha = 0.4, label = 'Real')
+plt.plot(model.predict(x), alpha = 0.4, label = 'Predict')
+plt.legend()
+plt.show()
+```
+
+- 예측모델 구현
+
+![랜덤포레스트](./img/랜덤포레스트.png)
+
 ### 활용방안
 
 #### 문제점 및 개선 방안
